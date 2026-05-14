@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>历史粘贴板 - 智能剪贴板管理</title>
+    <!-- 使用SF Pro风格字体，苹果风格系统字体栈 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 (免费图标库，用于托盘图标和操作图标) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f5f5f7;  /* 苹果浅灰背景 */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            color: #1d1c1f;
+            line-height: 1.4;
+            padding: 0 24px 48px;
+        }
+
+        /* 科技感苹果风格容器 */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* 头部 hero 区域 */
+        .hero {
+            text-align: center;
+            padding: 64px 0 48px;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: #e8e8ed;
+            backdrop-filter: blur(4px);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #1d1c1f;
+            margin-bottom: 20px;
+            letter-spacing: -0.2px;
+        }
+        h1 {
+            font-size: 3.8rem;
+            font-weight: 600;
+            letter-spacing: -0.008em;
+            background: linear-gradient(135deg, #1c1c1e, #3a3a3e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 20px;
+        }
+        .subhead {
+            font-size: 1.3rem;
+            color: #6e6e73;
+            font-weight: 400;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.4;
+        }
+        .feature-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 24px;
+            margin: 56px 0 48px;
+        }
+        .feature-card {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 28px;
+            padding: 20px 24px;
+            width: 200px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.02), 0 2px 6px rgba(0,0,0,0.05);
+            border: 0.5px solid rgba(255,255,255,0.6);
+        }
+        .feature-card i {
+            font-size: 2rem;
+            color: #0071e3;
+            margin-bottom: 12px;
+        }
+        .feature-card h4 {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .feature-card p {
+            font-size: 0.8rem;
+            color: #6e6e73;
+        }
+
+        /* 主面板 卡片区 + 控制栏 */
+        .dashboard {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 36px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.02);
+            padding: 28px 32px;
+            margin-top: 20px;
+            border: 0.5px solid rgba(255,255,255,0.8);
+        }
+        .control-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid #e8e8ed;
+            padding-bottom: 20px;
+        }
+        .search-area {
+            flex: 2;
+            min-width: 200px;
+            position: relative;
+        }
+        .search-area i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8e8e93;
+            font-size: 1rem;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            font-size: 0.95rem;
+            border: 1px solid #d2d2d6;
+            border-radius: 44px;
+            background: #ffffff;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow: 0 0 0 3px rgba(0,113,227,0.2);
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f9f9fb;
+            padding: 4px 12px;
+            border-radius: 40px;
+        }
+        .filter-group label {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        .retain-select {
+            background: white;
+            border: 1px solid #c6c6c8;
+            border-radius: 30px;
+            padding: 8px 14px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .stats {
+            font-size: 0.85rem;
+            background: #e8e8ed;
+            padding: 6px 14px;
+            border-radius: 60px;
+            color: #1c1c1e;
+        }
+        .mock-clipboard-area {
+            background: #f2f2f5;
+            border-radius: 24px;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+        .clip-sim {
+            flex: 2;
+        }
+        .clip-sim p {
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #6e6e73;
+            letter-spacing: -0.2px;
+        }
+        .sim-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 20px;
+            border: 1px solid #d2d2d6;
+            background: white;
+            font-family: monospace;
+        }
+        .btn-sim {
+            background: #0071e3;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-sim:hover {
+            background: #005bbf;
+        }
+        .add-image-btn {
+            background: #e8e8ed;
+            color: #1c1c1e;
+            margin-left: 8px;
+        }
+        .card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            max-height: 560px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+        /* 自定义滚动条苹果风格 */
+        .card-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .card-list::-webkit-scrollbar-track {
+            background: #e8e8ed;
+            border-radius: 10px;
+        }
+        .card-list::-webkit-scrollbar-thumb {
+            background: #b0b0b8;
+            border-radius: 10px;
+        }
+        .clip-card {
+            background: white;
+            border-radius: 24px;
+            padding: 18px 20px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02), 0 0 0 1px rgba(0,0,0,0.02);
+            border: 0.5px solid rgba(0,0,0,0.04);
+            display: flex;
+            gap: 16px;
+            position: relative;
+        }
+        .clip-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.02);
+        }
+        .card-media {
+            flex-shrink: 0;
+            width: 70px;
+            height: 70px;
+            background: #f5f5f7;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .card-media img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+        .card-media i {
+            font-size: 32px;
+            color: #8e8e93;
+        }
+        .card-content {
+            flex: 1;
+        }
+        .card-text {
+            font-size: 0.9rem;
+            line-height: 1.45;
+            color: #1d1c1f;
+            word-break: break-word;
+        }
+        .preview-more {
+            color: #6e6e73;
+            font-size: 0.75rem;
+        }
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            font-size: 0.7rem;
+            color: #8e8e93;
+        }
+        .card-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .icon-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #8e8e93;
+            transition: 0.2s;
+            padding: 4px;
+        }
+        .icon-btn.active {
+            color: #0071e3;
+        }
+        .pin-btn.active {
+            color: #ff9f0a;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8e8e93;
+        }
+        /* 托盘模拟 (右下角) */
+        .system-tray-sim {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .tray-icon {
+            background: rgba(30,30,32,0.85);
+            backdrop-filter: blur(20px);
+            width: 52px;
+            height: 52px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            border: 0.5px solid rgba(255,255,255,0.3);
+            transition: 0.2s;
+        }
+        .tray-icon i {
+            font-size: 26px;
+            color: white;
+        }
+        .tray-menu {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(24px);
+            border-radius: 20px;
+            padding: 8px 0;
+            margin-bottom: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            width: 160px;
+            display: none;
+            flex-direction: column;
+            border: 0.5px solid rgba(0,0,0,0.05);
+        }
+        .tray-menu.show {
+            display: flex;
+        }
+        .tray-menu button {
+            background: transparent;
+            border: none;
+            padding: 10px 18px;
+            text-align: left;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.1s;
+            font-family: inherit;
+        }
+        .tray-menu button:hover {
+            background: #e8e8ed;
+        }
+        @media (max-width: 680px) {
+            body {
+                padding: 0 16px 40px;
+            }
+            h1 {
+                font-size: 2.4rem;
+            }
+            .dashboard {
+                padding: 20px;
+            }
+            .control-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            font-size: 0.75rem;
+            color: #8e8e93;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <div class="hero-badge">
+            <i class="fas fa-microchip"></i> 原生级 · 安全无感
+        </div>
+        <h1>历史粘贴板</h1>
+        <div class="subhead">
+            自动捕获文本与图片 · 智能检索 · 如影随形
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card"><i class="fas fa-eye"></i><h4>自动捕获</h4><p>500ms 轮询剪贴板</p></div>
+            <div class="feature-card"><i class="fas fa-layer-group"></i><h4>卡片式展示</h4><p>倒序 / 图文预览</p></div>
+            <div class="feature-card"><i class="fas fa-thumbtack"></i><h4>智能管理</h4><p>置顶 · 搜索 · 保留策略</p></div>
+            <div class="feature-card"><i class="fas fa-tray"></i><h4>系统托盘</h4><p>后台静默 · 一键面板</p></div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="control-bar">
+            <div class="search-area">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="搜索文本、图片描述...">
+            </div>
+            <div class="filter-group">
+                <label><i class="far fa-clock"></i> 保留策略</label>
+                <select id="retainDays" class="retain-select">
+                    <option value="1">1 天</option>
+                    <option value="3" selected>3 天</option>
+                    <option value="5">5 天</option>
+                </select>
+            </div>
+            <div class="stats" id="statsDisplay">0 条记录</div>
+        </div>
+        
+        <!-- 模拟剪贴板区域 演示自动捕获轮询 -->
+        <div class="mock-clipboard-area">
+            <div class="clip-sim">
+                <p><i class="fas fa-clipboard-list"></i> 模拟系统剪贴板 (自动捕获演示 · 每500ms轮询)</p>
+                <input type="text" id="simClipText" class="sim-input" placeholder="在此输入文字模拟复制内容，自动添加到历史...">
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button id="addImageExampleBtn" class="btn-sim add-image-btn"><i class="fas fa-image"></i> 添加图片示例</button>
+                <button id="forceCaptureBtn" class="btn-sim"><i class="fas fa-sync-alt"></i> 立即捕获</button>
+            </div>
+        </div>
+        <div class="card-list" id="cardListContainer">
+            <!-- 动态卡片列表 -->
+        </div>
+    </div>
+    <footer>
+        <i class="fas fa-shield-alt"></i> 本地存储 · 最大500条 · 智能清理 · 置顶保护
+    </footer>
+</div>
+
+<!-- 模拟系统托盘区域 -->
+<div class="system-tray-sim">
+    <div class="tray-menu" id="trayMenu">
+        <button id="togglePanelBtn"><i class="fas fa-eye"></i> 显示/隐藏面板</button>
+        <button id="clearExpiredBtn"><i class="fas fa-trash-alt"></i> 清理过期条目</button>
+        <button id="aboutTrayBtn"><i class="fas fa-info-circle"></i> 关于本软件</button>
+    </div>
+    <div class="tray-icon" id="trayIconBtn">
+        <i class="fas fa-paste"></i>
+    </div>
+</div>
+
+<script>
+    // ---------- 数据模型 ----------
+    let historyItems = [];       // 卡片数组 { id, type, content, imageUrl?, textContent?, timestamp, pinned }
+    let nextId = 100;
+    let lastClipboardContent = "";   // 用于模拟轮询比较
+    let pollingInterval = null;
+
+    // 保留策略(天) 与 最大条目
+    const MAX_ITEMS = 500;
+    
+    // 辅助函数: 当前时间戳 (ms)
+    function nowTimestamp() {
+        return Date.now();
+    }
+    
+    // 添加新条目 (文本或图片)
+    function addItem(type, textData, imageUrl = null) {
+        // 去重简单防重复: 如果最后一条文本内容相同且时间间隔5s内忽略？但为了演示，不做过严。
+        let newItem = {
+            id: nextId++,
+            type: type,   // 'text' or 'image'
+            timestamp: nowTimestamp(),
+            pinned: false,
+        };
+        if (type === 'text') {
+            newItem.textContent = textData.substring(0, 5000); // 长文本截断
+            newItem.contentPreview = textData.length > 200 ? textData.substring(0, 200) + '…' : textData;
+        } else if (type === 'image') {
+            newItem.imageUrl = imageUrl || 'https://picsum.photos/id/20/200/150'; // 默认风景图
+            newItem.textContent = `📷 图片快照 (${new Date().toLocaleTimeString()})`;
+            newItem.contentPreview = '[图片] 点击查看原图';
+        }
+        historyItems.unshift(newItem); // 倒序插入最前面(最新)
+        // 限制最大条目 500
+        if (historyItems.length > MAX_ITEMS) {
+            // 移除最旧的且不是置顶的条目（保留置顶）
+            let nonPinnedIndices = historyItems.reduce((arr, item, idx) => {
+                if (!item.pinned) arr.push(idx);
+                return arr;
+            }, []);
+            if (nonPinnedIndices.length) {
+                let oldestIdx = Math.max(...nonPinnedIndices);
+                historyItems.splice(oldestIdx, 1);
+            } else {
+                historyItems.pop(); // 全是置顶,移除尾部
+            }
+        }
+        renderFilteredList();
+    }
+    
+    // 预置演示数据 (包含文本+图片，时间戳从近到远)
+    function initMockData() {
+        const now = nowTimestamp();
+        const oneDay = 86400000;
+        const demo = [
+            { type: 'text', txt: 'WWDC 2026 新发布的AI 功能将全面集成剪贴板，历史粘贴板支持智能摘要。超长文本演示：苹果公司宣布推出全新神经网络引擎，实时识别复制内容，自动分类保存。', timeOffset: 0.1 },
+            { type: 'image', img: 'https://picsum.photos/id/13/200/150', timeOffset: 0.3 },
+            { type: 'text', txt: '会议纪要：Q3 产品路线图确定，新增置顶保护和500条智能清理机制。', timeOffset: 0.8 },
+            { type: 'text', txt: '复制了一段重要的API 密钥: sk-7fh38d9a 请大家妥善保管。', timeOffset: 1.2 },
+            { type: 'image', img: 'https://picsum.photos/id/26/200/150', timeOffset: 1.5 },
+            { type: 'text', txt: 'macOS 新版本特性：后台托盘左键快速唤出历史面板，右键菜单支持一键清理。', timeOffset: 2.1 },
+        ];
+        for (let d of demo) {
+            let ts = now - (d.timeOffset * oneDay * 0.9); // 让最近几天都有
+            let item = {
+                id: nextId++,
+                type: d.type,
+                timestamp: ts,
+                pinned: false,
+            };
+            if (d.type === 'text') {
+                item.textContent = d.txt;
+                item.contentPreview = d.txt.length > 200 ? d.txt.substring(0,200)+'…' : d.txt;
+            } else {
+                item.imageUrl = d.img;
+                item.textContent = `📷 演示图片 (时间戳)`;
+                item.contentPreview = '[风景图片]';
+            }
+            historyItems.push(item);
+        }
+        // 额外再加一条置顶演示
+        let pinnedDemo = {
+            id: nextId++,
+            type: 'text',
+            textContent: '🔥 重要置顶笔记：每周复盘清单，置顶保护不会被自动清理。',
+            contentPreview: '🔥 重要置顶笔记：每周复盘清单，置顶保护不会被自动清理。',
+            timestamp: now - 3600000,
+            pinned: true
+        };
+        historyItems.push(pinnedDemo);
+        // 倒序排序（按时间新->旧，但最终渲染会处理置顶优先）
+        historyItems.sort((a,b) => b.timestamp - a.timestamp);
+        renderFilteredList();
+    }
+    
+    // 过滤 + 搜索 + 保留策略
+    function getFilteredAndSorted() {
+        let days = parseInt(document.getElementById('retainDays').value, 10);
+        let threshold = nowTimestamp() - days * 86400000;
+        let searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+        // 第一步：保留策略 (超时移除不显示)
+        let filtered = historyItems.filter(item => item.timestamp >= threshold);
+        // 第二步：全文搜索 (文本内容、图片说明)
+        if (searchTerm) {
+            filtered = filtered.filter(item => {
+                if (item.type === 'text') {
+                    return item.textContent.toLowerCase().includes(searchTerm);
+                } else {
+                    return (item.textContent + ' 图片 ').toLowerCase().includes(searchTerm);
+                }
+            });
+        }
+        // 排序: 置顶优先（pinned === true 的在前），同组内按时间倒序（新在上）
+        filtered.sort((a,b) => {
+            if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+            return b.timestamp - a.timestamp;
+        });
+        return filtered;
+    }
+    
+    // 渲染卡片
+    function renderFilteredList() {
+        const container = document.getElementById('cardListContainer');
+        const filtered = getFilteredAndSorted();
+        document.getElementById('statsDisplay').innerText = `${filtered.length} / ${historyItems.length} 条`;
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="empty-state"><i class="far fa-copy"></i> 暂无历史记录<br>复制文字或图片后会自动记录<br>试试上方的模拟剪贴板 ✨</div>`;
+            return;
+        }
+        container.innerHTML = filtered.map(item => {
+            let timeStr = new Date(item.timestamp).toLocaleString();
+            let pinActive = item.pinned ? 'active' : '';
+            let mediaHtml = '';
+            if (item.type === 'image') {
+                mediaHtml = `<div class="card-media"><img src="${item.imageUrl}" alt="clip thumbnail" onerror="this.src='https://picsum.photos/id/1/80/80'"></div>`;
+            } else {
+                mediaHtml = `<div class="card-media"><i class="fas fa-file-alt"></i></div>`;
+            }
+            let previewContent = item.type === 'text' ? (item.contentPreview || item.textContent) : (item.contentPreview || '📸 图片内容');
+            return `
+                <div class="clip-card" data-id="${item.id}">
+                    ${mediaHtml}
+                    <div class="card-content">
+                        <div class="card-text">${escapeHtml(previewContent)}</div>
+                        <div class="card-meta">
+                            <span><i class="far fa-clock"></i> ${timeStr}</span>
+                            ${item.type === 'image' ? `<span><i class="fas fa-image"></i> 图片快照</span>` : `<span><i class="fas fa-paragraph"></i> 文本</span>`}
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="icon-btn pin-btn ${pinActive}" data-action="pin" data-id="${item.id}"><i class="fas fa-thumbtack"></i></button>
+                        <button class="icon-btn" data-action="delete" data-id="${item.id}"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        // 绑定卡片内部按钮事件 (委托)
+        container.querySelectorAll('.pin-btn').forEach(btn => {
+            btn.removeEventListener('click', handlePin);
+            btn.addEventListener('click', handlePin);
+        });
+        container.querySelectorAll('.icon-btn[data-action="delete"]').forEach(btn => {
+            btn.removeEventListener('click', handleDelete);
+            btn.addEventListener('click', handleDelete);
+        });
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+    
+    function handlePin(e) {
+        e.stopPropagation();
+        const btn = e.currentTarget;
+        const id = parseInt(btn.getAttribute('data-id'), 10);
+        const item = historyItems.find(i => i.id === id);
+        if (item) {
+            item.pinned = !item.pinned;
+            renderFilteredList();
+        }
+    }
+    
+    function handleDelete(e) {
+        e.stopPropagation();
+        const btn = e.currentTarget;
+        const id = parseInt(btn.getAttribute('data-id'), 10);
+        historyItems = historyItems.filter(i => i.id !== id);
+        renderFilteredList();
+    }
+    
+    // 自动捕获轮询模拟 (监听模拟剪贴板文本框)
+    function startPolling() {
+        if (pollingInterval) clearInterval(pollingInterval);
+        const simInput = document.getElementById('simClipText');
+        // 初始化当前内容
+        lastClipboardContent = simInput.value;
+        pollingInterval = setInterval(() => {
+            const currentVal = simInput.value;
+            if (currentVal !== lastClipboardContent && currentVal.trim() !== "") {
+                // 检测到新内容 -> 添加文本卡片
+                addItem('text', currentVal.trim());
+                lastClipboardContent = currentVal;
+                // 可选提示轻反馈 (静默)
+            } else if (currentVal !== lastClipboardContent && currentVal.trim() === "") {
+                lastClipboardContent = currentVal;
+            }
+        }, 500);
+    }
+    
+    // 添加图片示例 (演示图片捕获)
+    function addImageDemo() {
+        const demoImages = [
+            'https://picsum.photos/id/41/200/150',
+            'https://picsum.photos/id/42/200/150',
+            'https://picsum.photos/id/100/200/150'
+        ];
+        let randomImg = demoImages[Math.floor(Math.random() * demoImages.length)];
+        addItem('image', '图片示例', randomImg);
+    }
+    
+    // 强制捕获当前模拟剪贴板文本
+    function forceCapture() {
+        const simInput = document.getElementById('simClipText');
+        let val = simInput.value.trim();
+        if (val !== "") {
+            addItem('text', val);
+            lastClipboardContent = val;
+        } else {
+            // 若为空提醒
+            const container = document.getElementById('cardListContainer');
+            const toast = document.createElement('div');
+            toast.textContent = '暂无内容可捕获，请在模拟剪贴板输入文字';
+            toast.style.position = 'fixed'; toast.style.bottom = '100px'; toast.style.right = '20px';
+            toast.style.background = '#1c1c1e'; toast.style.color = 'white'; toast.style.padding = '8px 16px';
+            toast.style.borderRadius = '40px'; toast.style.fontSize = '0.8rem'; toast.style.zIndex = '999';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 1500);
+        }
+    }
+    
+    // 清理过期条目（基于当前保留策略）
+    function cleanExpiredItems() {
+        let days = parseInt(document.getElementById('retainDays').value, 10);
+        let threshold = nowTimestamp() - days * 86400000;
+        let beforeCount = historyItems.length;
+        historyItems = historyItems.filter(item => item.timestamp >= threshold || item.pinned === true);
+        if (beforeCount !== historyItems.length) {
+            renderFilteredList();
+        }
+    }
+    
+    // 面板折叠/展开演示 (模拟托盘左键切换面板显示)
+    let panelVisible = true;
+    function toggleDashboardPanel() {
+        const dashboard = document.querySelector('.dashboard');
+        if (panelVisible) {
+            dashboard.style.display = 'none';
+            panelVisible = false;
+        } else {
+            dashboard.style.display = 'block';
+            panelVisible = true;
+        }
+    }
+    
+    // 初始化系统托盘交互
+    function initTray() {
+        const trayBtn = document.getElementById('trayIconBtn');
+        const trayMenu = document.getElementById('trayMenu');
+        let menuVisible = false;
+        trayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // 左键：切换面板显示 (模拟左键切换面板)
+            toggleDashboardPanel();
+            // 若右键菜单开着就先关闭
+            if (menuVisible) {
+                trayMenu.classList.remove('show');
+                menuVisible = false;
+            }
+        });
+        trayBtn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // 右键弹出菜单
+            trayMenu.classList.toggle('show');
+            menuVisible = trayMenu.classList.contains('show');
+        });
+        document.addEventListener('click', function() {
+            trayMenu.classList.remove('show');
+            menuVisible = false;
+        });
+        document.getElementById('togglePanelBtn').addEventListener('click', () => {
+            toggleDashboardPanel();
+            trayMenu.classList.remove('show');
+        });
+        document.getElementById('clearExpiredBtn').addEventListener('click', () => {
+            cleanExpiredItems();
+            trayMenu.classList.remove('show');
+        });
+        document.getElementById('aboutTrayBtn').addEventListener('click', () => {
+            alert('历史粘贴板 v2.0\n✨ 自动捕获文本/图片 · 置顶保护 · 智能保留策略\n后台托盘左键显示/隐藏主界面');
+            trayMenu.classList.remove('show');
+        });
+    }
+    
+    // 搜索和策略变动重新渲染
+    document.getElementById('searchInput').addEventListener('input', () => renderFilteredList());
+    document.getElementById('retainDays').addEventListener('change', () => renderFilteredList());
+    document.getElementById('addImageExampleBtn').addEventListener('click', addImageDemo);
+    document.getElementById('forceCaptureBtn').addEventListener('click', forceCapture);
+    
+    // 启动应用
+    initMockData();
+    startPolling();
+    initTray();
+    // 额外清理一下历史条目保留策略 (渲染时已经有过滤，但保持干净)
+    window.addEventListener('load', () => {
+        renderFilteredList();
+    });
+</script>
+</body>
+</html>
